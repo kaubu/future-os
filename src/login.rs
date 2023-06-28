@@ -5,7 +5,7 @@ use crossterm::{
         DisableMouseCapture,
         EnableMouseCapture,
         Event,
-        KeyCode
+        KeyCode, poll, KeyEventKind
     },
     execute,
     terminal::{
@@ -20,7 +20,7 @@ use tui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Wrap},
-    Frame, Terminal,
+    Frame, Terminal, terminal,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -98,43 +98,44 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) ->
         terminal.draw(|f| ui(f, &app))?;
 
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Enter => {
-                    // Attempt to log in
-                    // Return username and password to the main file
-                    // For now, just exit
-                    // return Ok(());
-                },
-                KeyCode::Backspace => {
-                    match app.selected_input {
-                        SelectedInput::Username => 
-                            app.username_input.pop(),
-                        SelectedInput::Password => 
-                            app.password_input.pop(),
-                    };
-                },
-                KeyCode::Tab => {
-                    app.invert_selected_input();
-                },
-                KeyCode::Char('q') => {
-                    return Ok(());
-                },
-                KeyCode::Char(c) => {
-                    match app.selected_input {
-                        SelectedInput::Username => {
-                            app.username_input.push(c);
-                            continue;
-                        },
-                        SelectedInput::Password => {
-                            app.password_input.push(c);
-                            continue;
-                        },
-                    };
-                },
-                _ => {},
+            if key.kind == KeyEventKind::Press {
+                match key.code {
+                    KeyCode::Enter => {
+                        // Attempt to log in
+                        // Return username and password to the main file
+                        // For now, just exit
+                        // return Ok(());
+                    },
+                    KeyCode::Backspace => {
+                        match app.selected_input {
+                            SelectedInput::Username => 
+                                app.username_input.pop(),
+                            SelectedInput::Password => 
+                                app.password_input.pop(),
+                        };
+                    },
+                    KeyCode::Tab => {
+                        app.invert_selected_input();
+                    },
+                    KeyCode::Char('q') => {
+                        return Ok(());
+                    },
+                    KeyCode::Char(c) => {
+                        match app.selected_input {
+                            SelectedInput::Username => {
+                                app.username_input.push(c);
+                                continue;
+                            },
+                            SelectedInput::Password => {
+                                app.password_input.push(c);
+                                continue;
+                            },
+                        };
+                    },
+                    _ => {},
+                }
             }
         }
-        thread::sleep(Duration::from_millis(50));
     }
 }
 
