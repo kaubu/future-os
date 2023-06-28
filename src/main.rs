@@ -56,7 +56,7 @@ fn main() -> Result<(), io::Error> {
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = 
         CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal: Terminal<CrosstermBackend<io::Stdout>> = Terminal::new(backend)?;
 
     // terminal.draw(|f| {
     //     let size = f.size();

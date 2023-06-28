@@ -17,10 +17,9 @@ use crossterm::{
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Direction, Layout, Alignment},
-    style::{Color, Modifier, Style},
-    text::{Span, Spans, Text},
-    widgets::{Block, Borders, Paragraph},
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    widgets::{Block, Borders, Paragraph, Wrap},
     Frame, Terminal,
 };
 use unicode_width::UnicodeWidthStr;
@@ -53,12 +52,12 @@ impl Default for App {
 
 impl App {
     fn invert_selected_input(&mut self) {
-        match self.selected_input {
+        self.selected_input = match self.selected_input {
             SelectedInput::Username => {
-                self.selected_input = SelectedInput::Password;
+                SelectedInput::Password
             },
             SelectedInput::Password => {
-                self.selected_input = SelectedInput::Username;
+                SelectedInput::Username
             },
         }
     }
@@ -74,7 +73,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     // Create app and run it
-    let mut app = App::default();
+    let app = App::default();
     let res = run_app(&mut terminal, app);
 
     // restore terminal
@@ -87,7 +86,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     terminal.show_cursor()?;
 
     if let Err(err) = res {
-        println!("ERROR.LOGIN: {:?}", err)
+        println!("ERROR::LOGIN: {:?}", err)
     }
 
     Ok(())
@@ -115,13 +114,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) ->
                     };
                 },
                 KeyCode::Tab => {
-                    // If Tab is pressed, switch fields
-                    // match app.selected_input {
-                    //     SelectedInput::Username => 
-                    //         app.selected_input = SelectedInput::Password,
-                    //     SelectedInput::Password => 
-                    //         app.selected_input = SelectedInput::Username,
-                    // };
                     app.invert_selected_input();
                 },
                 KeyCode::Char('q') => {
@@ -152,9 +144,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .margin(2)
         .constraints(
             [
-                // Constraint::Length(1),
-                // Constraint::Length(3),
-                // Constraint::Min(1),
                 Constraint::Length(3),
                 Constraint::Length(3),
                 // The Min here is required in order for the password box
@@ -165,36 +154,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         )
         .split(f.size());
 
-    // let (msg, style) = match app.selected_input {
-    //     SelectedInput::Username => (
-    //         vec![
-    //             Span::raw("Press "),
-    //             Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
-    //             Span::raw(" to exit, "),
-    //             Span::styled("e", Style::default().add_modifier(Modifier::BOLD)),
-    //             Span::raw(" to start editing."),
-    //         ],
-    //         Style::default().add_modifier(Modifier::RAPID_BLINK),
-    //     ),
-    //     SelectedInput::Password => (
-    //         vec![
-    //             Span::raw("Press "),
-    //             Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-    //             Span::raw(" to stop editing, "),
-    //             Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
-    //             Span::raw(" to record the message"),
-    //         ],
-    //         Style::default(),
-    //     ),
-    // };
-
-    // let mut text = Text::from(Spans::from(msg));
-    // text.patch_style(style);
-    // let help_message = Paragraph::new(text);
-    // f.render_widget(help_message, chunks[0]);
-
     let username_input =
-        Paragraph::new(app.username_input.as_ref())
+        Paragraph::new(app.username_input.as_str())
         .style(match app.selected_input {
             SelectedInput::Username => Style::default().fg(Color::Yellow),
             SelectedInput::Password => Style::default(),
@@ -203,12 +164,12 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             Block::default()
             .borders(Borders::ALL)
             .title("Username")
-            // .title_alignment(Alignment::Center)
-        );
+        )
+        .wrap(Wrap { trim: true });
     f.render_widget(username_input, chunks[0]);
 
     let password_input =
-        Paragraph::new(app.password_input.as_ref())
+        Paragraph::new(app.password_input.as_str()) // .as_ref()
         .style(match app.selected_input {
             SelectedInput::Username => Style::default(),
             SelectedInput::Password => Style::default().fg(Color::Yellow),
@@ -217,8 +178,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             Block::default()
             .borders(Borders::ALL)
             .title("Password")
-            // .title_alignment(Alignment::Center)
-        );
+        )
+        .wrap(Wrap { trim: true });
     f.render_widget(password_input, chunks[1]);
 
     match app.selected_input {
@@ -243,17 +204,4 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             )
         },
     }
-
-    // let messages: Vec<ListItem> = app
-    //     .messages
-    //     .iter()
-    //     .enumerate()
-    //     .map(|(i, m)| {
-    //         let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
-    //         ListItem::new(content)
-    //     })
-    //     .collect();
-    // let messages =
-    //     List::new(messages).block(Block::default().borders(Borders::ALL).title("Messages"));
-    // f.render_widget(messages, chunks[2]);
 }
