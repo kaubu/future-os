@@ -24,6 +24,8 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
+const CENSOR_PASSWORD: bool = true;
+
 // State of which input box is selected
 enum SelectedInput {
     Username,
@@ -36,6 +38,8 @@ struct App {
     username_input: String,
     // Current value of the password input box
     password_input: String,
+    // Censored password input to display
+    censored_input: String,
     // Which input box is currently in use
     selected_input: SelectedInput,
 }
@@ -45,6 +49,7 @@ impl Default for App {
         App {
             username_input: String::new(),
             password_input: String::new(),
+            censored_input: String::new(),
             selected_input: SelectedInput::Username,
         }
     }
@@ -60,6 +65,16 @@ impl App {
                 SelectedInput::Username
             },
         }
+    }
+
+    fn insert_password_char(&mut self, c: char) {
+        self.password_input.push(c);
+        self.censored_input.push('*');
+    }
+
+    fn delete_password_char(&mut self) {
+        self.password_input.pop();
+        self.censored_input.pop();
     }
 }
 
@@ -101,17 +116,21 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) ->
             if key.kind == KeyEventKind::Press {
                 match key.code {
                     KeyCode::Enter => {
-                        // Attempt to log in
-                        // Return username and password to the main file
-                        // For now, just exit
-                        // return Ok(());
+                        // Attempt to log in Return username and password to
+                        // the main file For now, just exit return Ok(());
                     },
                     KeyCode::Backspace => {
                         match app.selected_input {
-                            SelectedInput::Username => 
-                                app.username_input.pop(),
-                            SelectedInput::Password => 
-                                app.password_input.pop(),
+                            SelectedInput::Username => {
+                                app.username_input.pop();
+                                // All match arms have to return the same type
+                                ()
+                            }
+                            SelectedInput::Password => {
+                                app.delete_password_char();
+                                // All match arms have to return the same type
+                                ()
+                            }
                         };
                     },
                     KeyCode::Tab => {
@@ -127,7 +146,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) ->
                                 continue;
                             },
                             SelectedInput::Password => {
-                                app.password_input.push(c);
+                                app.insert_password_char(c);
                                 continue;
                             },
                         };
@@ -147,8 +166,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             [
                 Constraint::Length(3),
                 Constraint::Length(3),
-                // The Min here is required in order for the password box
-                // not to auto-extend to the bottom
+                // The Min here is required in order for the password box not
+                // to auto-extend to the bottom
                 Constraint::Min(1),
             ]
             .as_ref(),
@@ -169,18 +188,25 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .wrap(Wrap { trim: true });
     f.render_widget(username_input, chunks[0]);
 
-    let password_input =
-        Paragraph::new(app.password_input.as_str()) // .as_ref()
-        .style(match app.selected_input {
-            SelectedInput::Username => Style::default(),
-            SelectedInput::Password => Style::default().fg(Color::Yellow),
-        })
-        .block(
-            Block::default()
-            .borders(Borders::ALL)
-            .title("Password")
-        )
-        .wrap(Wrap { trim: true });
+        let password_field;
+        if CENSOR_PASSWORD {
+            password_field = app.censored_input.as_str();
+        } else {
+            password_field = app.password_input.as_str();
+        }
+        
+        let password_input =
+            Paragraph::new(password_field) // .as_ref()
+            .style(match app.selected_input {
+                SelectedInput::Username => Style::default(),
+                SelectedInput::Password => Style::default().fg(Color::Yellow),
+            })
+            .block(
+                Block::default()
+                .borders(Borders::ALL)
+                .title("Password")
+            )
+            .wrap(Wrap { trim: true });
     f.render_widget(password_input, chunks[1]);
 
     match app.selected_input {
