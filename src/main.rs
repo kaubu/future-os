@@ -43,6 +43,7 @@ use crossterm::{
 // Local modules
 mod datetime;
 mod login;
+mod api;
 
 // Constants
 const VERSION: &str = env!("CARGO_PKG_VERSION");
